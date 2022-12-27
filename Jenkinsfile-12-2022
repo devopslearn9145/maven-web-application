@@ -1,0 +1,36 @@
+node('wallmart-node')
+{
+    
+    def mavenVar=tool name: "maven-3.8.6"
+    
+    properties([buildDiscarder(logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '3', daysToKeepStr: '', numToKeepStr: '3')), pipelineTriggers([pollSCM('* * * * *')])])
+    
+ stage ('CheckoutCode')   
+   {
+       git branch: 'development', credentialsId: 'fabd06e5-d663-4c55-97c0-cb9744ba70bc', url: 'https://github.com/devopslearn9145/maven-web-application.git'
+   } 
+    
+  stage ('Build')
+  {
+     sh "${mavenVar}/bin/mvn clean package"
+  }
+    
+    
+    stage ('ExecuteSonarQubeReport')
+    {
+        sh "${mavenVar}/bin/mvn sonar:sonar"
+    }
+    
+    stage ('UploadArtifactsintoNexus')
+    {
+        sh "${mavenVar}/bin/mvn deploy"
+    }
+    
+    stage ('DeployintoTomcatServer')
+    {
+        sshagent(['c4cb2885-6b7c-4d75-a72a-27e894665e0d']) {
+        sh "scp -o StrictHostKeyChecking=no target/maven-web-application.war ec2-user@44.201.128.120:/opt/apache-tomcat-9.0.70/webapps"
+}
+
+    }
+}
