@@ -1,0 +1,48 @@
+pipeline
+{
+    
+    agent any
+    
+    tools{
+        maven 'maven-3.8.6'
+    }
+    
+    stages{
+   
+   stage('Checkoutcode'){
+       steps{
+         git branch: 'development', credentialsId: 'fabd06e5-d663-4c55-97c0-cb9744ba70bc', url: 'https://github.com/devopslearn9145/maven-web-application.git'  
+       }
+   }     
+     
+     stage('build'){
+         steps{
+             sh "mvn clean package"
+         }
+     }
+     
+     stage('Executesonarqubereport'){
+         steps{
+             sh "mvn sonar:sonar"
+         }
+     }
+     
+     stage('UploadArtifactintoNexus'){
+         steps{
+             sh "mvn deploy"
+         }
+     }
+        
+        stage('DeployintoTomcatServer'){
+            steps{
+                sshagent(['c4cb2885-6b7c-4d75-a72a-27e894665e0d']) {
+    sh "scp -o StrictHostKeyChecking=no target/maven-web-application.war ec2-user@44.201.128.120:/opt/apache-tomcat-9.0.70/webapps"
+}
+            }
+        }
+        
+        
+    }
+    
+    
+}
